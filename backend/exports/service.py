@@ -17,7 +17,7 @@ COMPILATION_COLLECTION_NAME = 'compilations'
 
 class ExportService:
     def __init__(self, mongo_client, uuid4, datetime, browser, beautiful_soup, file_service):
-        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))
+        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))#os.environ.get(MONGO_KEY_NAME))
         self.export_object_mapper = ExportObjectMapper()
         self.export_utils = ExportUtils()
         self.uuid = uuid4()
@@ -107,7 +107,7 @@ class ExportService:
         return True
 
     def validate_permissions(self, user_id: str) -> bool:
-        return user_id == session['user']['_id']
+        return session and user_id == session['user']['_id']
 
     def validate_compilation_id(self, compilation_id: str) -> bool:
         db = self.cluster[DB_NAME]

@@ -8,11 +8,11 @@ DB_NAME = 'main'
 COMPILATION_COLLECTION_NAME = 'compilations'
 
 class CompilationService:
-    def __init__(self, mongo_client, uuid4, datetime):
+    def __init__(self, mongo_client, uuid, datetime):
         self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))
         self.compilation_object_mapper = CompilationObjectMapper()
         self.compilation_utils = CompilationUtils()
-        self.uuid = uuid4()
+        self.uuid = uuid.uuid4()
         self.datetime = datetime
 
     def create(self, user_id: str, compilation: dict) -> dict:
@@ -139,7 +139,7 @@ class CompilationService:
         return True
 
     def validate_permissions(self, user_id: str) -> bool:
-        return user_id == session['user']['_id']
+        return session and user_id == session['user']['_id']
 
     def validate_tiktok_urls(self, video_urls: list):
         for url in video_urls:

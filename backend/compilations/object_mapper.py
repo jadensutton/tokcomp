@@ -29,7 +29,7 @@ class CompilationObjectMapper:
         target = {}
 
         if source['_id']:
-            target['id'] = source['_id']
+            target['_id'] = source['_id']
 
         if 'title' in source:
             target['title'] = source['title']

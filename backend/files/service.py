@@ -8,7 +8,7 @@ DB_NAME = 'gridfs'
 
 class FileService:
     def __init__(self, mongo_client):
-        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))
+        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))#os.environ.get(MONGO_KEY_NAME))
 
     def create(self, file, export_id: str) -> dict:
         db = self.cluster[DB_NAME]
@@ -40,4 +40,4 @@ class FileService:
         return file, 200
 
     def validate_permissions(self, user_id: str) -> bool:
-        return user_id == session['user']['_id']
+        return session and user_id == session['user']['_id']

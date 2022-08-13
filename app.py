@@ -2,7 +2,7 @@ import json
 import uuid
 import os
 
-from flask import Flask, request, session
+from flask import Flask, request, session, jsonify
 from flask_cors import CORS, cross_origin
 from functools import wraps
 from pymongo import MongoClient
@@ -17,10 +17,11 @@ from backend import CompilationService
 from backend import ExportService
 from backend import FileService
 from backend import UserService
+from backend import EmailUtils
 
 app = Flask(__name__, static_folder='client/build', static_url_path='')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
-cors = CORS(app)
+cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADER'] = 'Content-Type'
 
 def auth_required(f):
@@ -37,32 +38,32 @@ def auth_required(f):
 @auth_required
 def create_compilation(user_id):
     compilation = json.loads(request.data)
-    compilation_service = CompilationService(MongoClient, uuid.uuid4, datetime)
+    compilation_service = CompilationService(MongoClient, uuid, datetime)
     return compilation_service.create(user_id, compilation)
 
 @app.route('/compilations/<user_id>', methods=['GET'])
 @auth_required
 def get_compilations(user_id):
-    compilation_service = CompilationService(MongoClient, uuid.uuid4, datetime)
+    compilation_service = CompilationService(MongoClient, uuid, datetime)
     return compilation_service.get(user_id)
 
 @app.route('/compilations/<user_id>/<compilation_id>', methods=['GET'])
 @auth_required
 def get_compilation(user_id, compilation_id):
-    compilation_service = CompilationService(MongoClient, uuid.uuid4, datetime)
+    compilation_service = CompilationService(MongoClient, uuid, datetime)
     return compilation_service.get_one(user_id, compilation_id)
 
 @app.route('/compilations/<user_id>/<compilation_id>', methods=['PUT'])
 @auth_required
 def update_compilation(user_id, compilation_id):
     compilation = json.loads(request.data)
-    compilation_service = CompilationService(MongoClient, uuid.uuid4, datetime)
+    compilation_service = CompilationService(MongoClient, uuid, datetime)
     return compilation_service.update(user_id, compilation_id, compilation)
 
 @app.route('/compilations/<user_id>/<compilation_id>', methods=['DELETE'])
 @auth_required
 def delete_compilation(user_id, compilation_id):
-    compilation_service = CompilationService(MongoClient, uuid.uuid4, datetime)
+    compilation_service = CompilationService(MongoClient, uuid, datetime)
     return compilation_service.delete(user_id, compilation_id)
 
 @app.route('/exports/<user_id>/<compilation_id>', methods=['POST'])
@@ -78,13 +79,13 @@ def create_export(user_id, compilation_id):
     file_service = FileService(MongoClient)
 
     export = json.loads(request.data)
-    export_service = ExportService(MongoClient, uuid.uuid4, datetime, browser, BeautifulSoup, file_service)
+    export_service = ExportService(MongoClient, uuid, datetime, browser, BeautifulSoup, file_service)
     return export_service.create(user_id, compilation_id, export)
 
 @app.route('/exports/<user_id>', methods=['GET'])
 @auth_required
 def get_exports(user_id):
-    export_service = ExportService(MongoClient, uuid.uuid4, datetime, None, BeautifulSoup, None)
+    export_service = ExportService(MongoClient, uuid, datetime, None, BeautifulSoup, None)
     return export_service.get(user_id)
 
 @app.route('/files/<user_id>/<export_id>', methods=['GET'])
@@ -93,26 +94,65 @@ def get_file(user_id, export_id):
     file_service = FileService(MongoClient)
     return file_service.get_one(user_id, export_id)
 
+@app.route('/user/me', methods=['GET'])
+@cross_origin()
+def me():
+    response = jsonify(session['user'])
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response, 200
+
 @app.route('/user/login', methods=['POST'])
+@cross_origin()
 def login():
     email = get_param(request, 'email')
     password = get_param(request, 'password')
 
-    user_service = UserService(MongoClient, uuid.uuid4, pbkdf2_sha2656)
-    return user_service.login(email, password)
+    user_service = UserService(MongoClient, uuid, pbkdf2_sha256, datetime, None)
+
+    login_response, status = user_service.login(email, password)
+    response = jsonify(login_response)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response, status
 
 @app.route('/user/signup', methods=['POST'])
+@cross_origin()
 def signup():
     email = get_param(request, 'email')
     password = get_param(request, 'password')
 
-    user_service = UserService(MongoClient, uuid.uuid4, pbkdf2_sha256)
-    return user_service.signup(email, password)
+    email_utils = EmailUtils()
+
+    user_service = UserService(MongoClient, uuid, pbkdf2_sha256, datetime, email_utils)
+
+    signup_response, status = user_service.signup(email, password)
+    response = jsonify(signup_response)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response, status
 
 @app.route('/user/logout')
 def logout():
-    user_service = UserService(MongoClient, uuid.uuid4, pbkdf2_sha256)
+    user_service = UserService(MongoClient, uuid, pbkdf2_sha256, datetime, None)
     return user_service.logout()
+
+@app.route('/user/confirm/<user_id>/<confirmation_code>')
+def confirm(user_id, confirmation_code):
+    user_service = UserService(MongoClient, uuid, pbkdf2_sha256, datetime, None)
+    return user_service.confirm(user_id, confirmation_code)
+
+@app.route('/user/forgot/<user_id>')
+def forgot(user_id):
+    email_utils = EmailUtils()
+    user_service = UserService(MongoClient, uuid, pbkdf2_sha256, datetime, email_utils)
+    return user_service.forgot(user_id)
+
+@app.route('/user/change_password/<user_id>/<change_password_code>', methods=['POST'])
+def change_password(user_id, change_password_code):
+    new_password = get_param(request, 'new_password')
+    user_service = UserService(MongoClient, uuid, pbkdf2_sha256, datetime, None)
+    return user_service.change_password(user_id, change_password_code, new_password)
 
 def get_param(r, param_name):
     return json.loads(r.data)[param_name]
