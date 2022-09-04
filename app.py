@@ -12,15 +12,18 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+from urllib.parse import unquote
 
 from backend import CompilationService
 from backend import ExportService
 from backend import FileService
 from backend import UserService
+from backend import BackgroundService
+from backend import ThumbnailService
 from backend import EmailUtils
 
 app = Flask(__name__, static_folder='client/build', static_url_path='')
-app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+app.secret_key = 'J7g2#G7g73$fk2v6V6a!7v3KV37vd6'#os.environ.get('FLASK_SECRET_KEY')
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADER'] = 'Content-Type'
 
@@ -53,7 +56,7 @@ def get_compilation(user_id, compilation_id):
     compilation_service = CompilationService(MongoClient, uuid, datetime)
     return compilation_service.get_one(user_id, compilation_id)
 
-@app.route('/compilations/<user_id>/<compilation_id>', methods=['PUT'])
+@app.route('/compilations/<user_id>/<compilation_id>', methods=['PATCH'])
 @auth_required
 def update_compilation(user_id, compilation_id):
     compilation = json.loads(request.data)
@@ -88,18 +91,35 @@ def get_exports(user_id):
     export_service = ExportService(MongoClient, uuid, datetime, None, BeautifulSoup, None)
     return export_service.get(user_id)
 
-@app.route('/files/<user_id>/<export_id>', methods=['GET'])
+@app.route('/files/<user_id>/<file_id>', methods=['GET'])
 @auth_required
-def get_file(user_id, export_id):
+def get_file(user_id, file_id):
+    type = request.args.get('type')
     file_service = FileService(MongoClient)
-    return file_service.get_one(user_id, export_id)
+    return file_service.get_one(user_id, file_id, type)
+
+@app.route('/thumbnails/<path:url>', methods=['GET'])
+@auth_required
+def get_thumbnail(url):
+    thumbnail_service = ThumbnailService(BeautifulSoup)
+    return thumbnail_service.get_one(unquote(url))
+
+@app.route('/backgrounds/<user_id>', methods=['POST'])
+@auth_required
+def create_background(user_id):
+    print(request.form['name'])
+    print(request.form['file'])
+    background = {}#json.loads(request.data)
+    #print(request.data)
+
+    background_service = BackgroundService(MongoClient, uuid)
+    return background_service.create(user_id, background)
 
 @app.route('/user/me', methods=['GET'])
 @cross_origin()
 def me():
     response = jsonify(session['user'])
     response.headers.add('Access-Control-Allow-Origin', '*')
-
     return response, 200
 
 @app.route('/user/login', methods=['POST'])

@@ -5,14 +5,17 @@ class CompilationObjectMapper:
     def transport_to_persistence(self, source: dict, user_id: str, compilation_id: str) -> dict:
         target = {}
 
-        if user_id:
+        if compilation_id:
             target['_id'] = compilation_id
 
-        if compilation_id:
+        if user_id:
             target['created_by'] = user_id
 
         if 'title' in source:
             target['title'] = source['title']
+
+        if 'background' in source:
+            target['background'] = source['background']
 
         if 'videos' in source:
             target['videos'] = source['videos']
@@ -28,11 +31,14 @@ class CompilationObjectMapper:
     def persistence_to_transport(self, source: dict) -> dict:
         target = {}
 
-        if source['_id']:
+        if '_id' in source:
             target['_id'] = source['_id']
 
         if 'title' in source:
             target['title'] = source['title']
+
+        if 'background' in source:
+            target['background'] = source['background']
 
         if 'videos' in source:
             target['videos'] = source['videos']

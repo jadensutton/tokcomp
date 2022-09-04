@@ -11,7 +11,7 @@ USERS_COLLECTION_NAME = 'users'
 
 class UserService:
     def __init__(self, mongo_client, uuid4, encryption_algorithm, datetime, email_utils):
-        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))
+        self.cluster = mongo_client('mongodb+srv://admin:fY9sUYO5nWUdCcOQ@cluster0.cyk1gh1.mongodb.net/?retryWrites=true&w=majority')#os.environ.get(MONGO_KEY_NAME))
         self.user_utils = UserUtils()
         self.uuid = uuid4
         self.encryption_algorithm = encryption_algorithm
@@ -52,6 +52,7 @@ class UserService:
             'confirmation_code': str(self.uuid.uuid4()),
             'change_password_code': None,
             'change_password_request_time': None,
+            'plan': 'free',
             'status': self.user_utils.get_pending_status()
         }
 

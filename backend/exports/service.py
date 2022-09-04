@@ -17,7 +17,7 @@ COMPILATION_COLLECTION_NAME = 'compilations'
 
 class ExportService:
     def __init__(self, mongo_client, uuid4, datetime, browser, beautiful_soup, file_service):
-        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))#os.environ.get(MONGO_KEY_NAME))
+        self.cluster = mongo_client('mongodb+srv://admin:fY9sUYO5nWUdCcOQ@cluster0.cyk1gh1.mongodb.net/?retryWrites=true&w=majority')#os.environ.get(MONGO_KEY_NAME))
         self.export_object_mapper = ExportObjectMapper()
         self.export_utils = ExportUtils()
         self.uuid = uuid4()

@@ -6,9 +6,9 @@ from email.mime.text import MIMEText
 
 class EmailUtils:
     def __init__(self):
-        self.sender = os.environ.get('EMAIL_SENDER')
-        self.password = os.environ.get('EMAIL_PASSWORD')
-        self.smtp_server = os.environ.get('SMTP_SERVER')
+        self.sender = 'jadensutton37@gmail.com'
+        self.password = 'oguxjviixspqfvfv'#os.environ.get('EMAIL_PASSWORD')
+        self.smtp_server = 'smtp.gmail.com:587'#os.environ.get('SMTP_SERVER')
 
     def confirm_user(self, email: str, user_id: str, confirmation_code: str):
         subject = '[TokComp] Please Confirm Your E-mail Address'

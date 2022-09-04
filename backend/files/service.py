@@ -8,22 +8,22 @@ DB_NAME = 'gridfs'
 
 class FileService:
     def __init__(self, mongo_client):
-        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))#os.environ.get(MONGO_KEY_NAME))
+        self.cluster = mongo_client('mongodb+srv://admin:fY9sUYO5nWUdCcOQ@cluster0.cyk1gh1.mongodb.net/?retryWrites=true&w=majority')#os.environ.get(MONGO_KEY_NAME))
 
-    def create(self, file, export_id: str) -> dict:
+    def create(self, file, file_id: str) -> dict:
         db = self.cluster[DB_NAME]
         fs = GridFS(db)
 
         try:
-            file_id = fs.put(file, _id=export_id)
+            fs.put(file, _id=file_id)
 
         except Exception as e:
             print('backend.files.service.py - create() - {}'.format(e))
             raise RuntimeError('Internal server error.')
 
-        return file_id
+        return 'Ok', 200
 
-    def get_one(self, user_id: str, export_id: str) -> str:
+    def get_one(self, user_id: str, file_id: str) -> str:
         if not self.validate_permissions(user_id):
             print('backend.files.service.py - get() - Permission validation failed.')
             return {'error': 'Unauthorized'}, 401
@@ -32,7 +32,7 @@ class FileService:
         fs = GridFS(db)
 
         try:
-            file = fs.get(export_id).read()
+            file = fs.get(file_id).read()
         except Exception as e:
             print('backend.files.service.py - get_one() - {}'.format(e))
             raise RuntimeError('Internal server error.')

@@ -5,10 +5,10 @@ class ExportObjectMapper:
     def transport_to_persistence(self, source: dict, user_id: str, export_id: str) -> dict:
         target = {}
 
-        if user_id:
+        if export_id:
             target['_id'] = export_id
 
-        if export_id:
+        if user_id:
             target['created_by'] = user_id
 
         if 'title' in source:
@@ -31,7 +31,7 @@ class ExportObjectMapper:
     def persistence_to_transport(self, source: dict) -> dict:
         target = {}
 
-        if source['_id']:
+        if '_id' in source:
             target['id'] = source['_id']
 
         if 'title' in source:

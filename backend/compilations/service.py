@@ -9,7 +9,7 @@ COMPILATION_COLLECTION_NAME = 'compilations'
 
 class CompilationService:
     def __init__(self, mongo_client, uuid, datetime):
-        self.cluster = mongo_client(os.environ.get(MONGO_KEY_NAME))
+        self.cluster = mongo_client('mongodb+srv://admin:fY9sUYO5nWUdCcOQ@cluster0.cyk1gh1.mongodb.net/?retryWrites=true&w=majority')#os.environ.get(MONGO_KEY_NAME))
         self.compilation_object_mapper = CompilationObjectMapper()
         self.compilation_utils = CompilationUtils()
         self.uuid = uuid.uuid4()
@@ -84,8 +84,6 @@ class CompilationService:
             print('backend.compilations.service.py - update() - Permission validation failed.')
             return {'error': 'Unauthorized'}, 401
 
-        compilation['modified_at'] = self.datetime.now()
-
         if not self.validate_input(compilation, compilation_id, user_id):
             print('backend.compilations.service.py - update() - Input validation failed.')
             return {'error': 'Invalid input'}, 400
@@ -99,7 +97,7 @@ class CompilationService:
 
         persistence_compilation = self.compilation_object_mapper.transport_to_persistence(compilation, user_id, compilation_id)
         try:
-            collection.replace_one({'_id': compilation_id, 'created_by': user_id}, persistence_compilation)
+            collection.update_one({'_id': compilation_id, 'created_by': user_id}, {'$set': {'title': persistence_compilation['title'], 'background': persistence_compilation['background'], 'videos': persistence_compilation['videos'], 'modified_at': self.datetime.now()}})
         except Exception as e:
             print('backend.compilations.service.py - update() - {}'.format(e))
             raise RuntimeError('Internal server error.')
@@ -136,13 +134,18 @@ class CompilationService:
                 print('backend.compilations.service.py - validate_input() - Compilation obj contains None for a required field. Compilation = \n{}'.format(compilation))
                 return False
 
+        if compilation['background'] != self.compilation_utils.get_default_background() and session['user']['plan'] == 'free':
+            print('backend.compilations.service.py - validate_input() - User with free plan attempted to use custom background. Background = {}'.format(compilation['background']))
+            return False
+
         return True
 
     def validate_permissions(self, user_id: str) -> bool:
         return session and user_id == session['user']['_id']
 
-    def validate_tiktok_urls(self, video_urls: list):
-        for url in video_urls:
+    def validate_tiktok_urls(self, videos: list):
+        for video in videos:
+            url = video['share_url']
             url_sections = url.split('/')
             if len(url_sections) != 6:
                 return False
@@ -154,6 +157,7 @@ class CompilationService:
 
     def add_fields_to_compilation(self, compilation: dict) -> dict:
         compilation['videos'] = []
+        compilation['background'] = self.compilation_utils.get_default_background()
         compilation['created_at'] = self.datetime.now()
 
         return compilation
